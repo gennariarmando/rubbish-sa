@@ -14,6 +14,7 @@
 #include "CCullZones.h"
 #include "CBulletTraces.h"
 #include "Utility.h"
+#include "CGame.h"
 
 #define RUBBISH_MAX_DIST (18.0f)
 #define RUBBISH_FADE_DIST (16.5f)
@@ -122,6 +123,8 @@ void CRubbish::Shutdown() {
 }
 
 void CRubbish::Render() {
+	if (CGame::currArea > 0)
+		return;
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, (void*)FALSE);
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
 	RwRenderStateSet(rwRENDERSTATEFOGENABLE, (void*)TRUE);
