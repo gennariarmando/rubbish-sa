@@ -28,5 +28,7 @@ public:
         onProcessControl += [](CAutomobile* _this) {
             CRubbish::StirUp(_this);
         };
+
+        patch::RedirectJump(0x7204C0, CRubbish::SetVisibility);
     }
 } rubbishSA;
