@@ -14,12 +14,15 @@
 #include "CCullZones.h"
 #include "CBulletTraces.h"
 #include "Utility.h"
+#include "CCullZones.cpp"
 #include "CGame.h"
 
-#define RUBBISH_MAX_DIST (18.0f)
-#define RUBBISH_FADE_DIST (16.5f)
 
-RwTexture* gpRubbishTexture[4];
+
+
+#define RUBBISH_MAX_DIST (25.0f)
+#define RUBBISH_FADE_DIST (25.0f)
+RwTexture* gpRubbishTexture[14];
 RwImVertexIndex RubbishIndexList[6];
 RwImVertexIndex RubbishIndexList2[6];
 RwIm3DVertex RubbishVertices[4];
@@ -56,7 +59,6 @@ void CRubbish::Init() {
 		else
 			aSheets[i].m_prev = &StartEmptyList;
 	}
-
 	StartEmptyList.m_next = &aSheets[0];
 	StartEmptyList.m_prev = NULL;
 	EndEmptyList.m_next = NULL;
@@ -96,13 +98,24 @@ void CRubbish::Init() {
 	RubbishIndexList[5] = 2;
 
 	CTxdStore::PushCurrentTxd();
-	int32_t slot = CTxdStore::FindTxdSlot("particle");
-
+	int32_t slot2 = CTxdStore::AddTxdSlot("rubbishSA");
+	CTxdStore::LoadTxd(slot2, "MODELS\\RUBBISHSA.TXD");
+	int32_t slot = CTxdStore::FindTxdSlot("rubbishSA");
 	CTxdStore::SetCurrentTxd(slot);
 	gpRubbishTexture[0] = RwTextureRead("gameleaf01_64", NULL);
 	gpRubbishTexture[1] = RwTextureRead("gameleaf02_64", NULL);
-	gpRubbishTexture[2] = RwTextureRead("newspaper01_64", NULL);
-	gpRubbishTexture[3] = RwTextureRead("newspaper02_64", NULL);
+	gpRubbishTexture[2] = RwTextureRead("gameleaf03_64", NULL);
+	gpRubbishTexture[3] = RwTextureRead("gameleaf04_64", NULL);
+	gpRubbishTexture[4] = RwTextureRead("gameleaf05_64", NULL);
+	gpRubbishTexture[5] = RwTextureRead("gameleaf06_64", NULL);
+	gpRubbishTexture[6] = RwTextureRead("newspaper01_64", NULL);
+	gpRubbishTexture[7] = RwTextureRead("newspaper02_64", NULL);
+	gpRubbishTexture[8] = RwTextureRead("newspaper03_64", NULL);
+	gpRubbishTexture[9] = RwTextureRead("newspaper04_64", NULL);
+	gpRubbishTexture[10] = RwTextureRead("newspaper05_64", NULL);
+	gpRubbishTexture[11] = RwTextureRead("newspaper06_64", NULL);
+	gpRubbishTexture[12] = RwTextureRead("newspaper07_64", NULL);
+	gpRubbishTexture[13] = RwTextureRead("newspaper1", NULL);
 	CTxdStore::PopCurrentTxd();
 	RubbishVisibility = 255;
 	bRubbishInvisible = false;
@@ -120,24 +133,55 @@ void CRubbish::Shutdown() {
 
 	RwTextureDestroy(gpRubbishTexture[3]);
 	gpRubbishTexture[3] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[4]);
+	gpRubbishTexture[4] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[5]);
+	gpRubbishTexture[5] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[6]);
+	gpRubbishTexture[6] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[7]);
+	gpRubbishTexture[7] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[8]);
+	gpRubbishTexture[8] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[9]);
+	gpRubbishTexture[9] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[10]);
+	gpRubbishTexture[10] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[11]);
+	gpRubbishTexture[11] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[12]);
+	gpRubbishTexture[12] = NULL;
+
+	RwTextureDestroy(gpRubbishTexture[13]);
+	gpRubbishTexture[13] = NULL;
 }
 
 void CRubbish::Render() {
-	if (CGame::currArea > 0)
+	if (RubbishVisibility == 0 || CGame::currArea > 0)
 		return;
+
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, (void*)FALSE);
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
 	RwRenderStateSet(rwRENDERSTATEFOGENABLE, (void*)TRUE);
 
-	for (int32_t i = 0; i < 4; i++) {
+	for (int32_t i = 0; i < 14; i++) {
 		RwRenderStateSet(rwRENDERSTATETEXTURERASTER, RwTextureGetRaster(gpRubbishTexture[i]));
 
 		TempBufferIndicesStored = 0;
 		TempBufferVerticesStored = 0;
 
 		COneSheet* sheet;
-		for (sheet = &aSheets[i * NUM_RUBBISH_SHEETS / 4];
-			sheet < &aSheets[(i + 1) * NUM_RUBBISH_SHEETS / 4];
+		for (sheet = &aSheets[i * NUM_RUBBISH_SHEETS / 14];
+			sheet < &aSheets[(i + 1) * NUM_RUBBISH_SHEETS / 14];
 			sheet++) {
 			if (sheet->m_state == 0)
 				continue;
@@ -165,17 +209,67 @@ void CRubbish::Render() {
 					alpha -= alpha * (camDist - RUBBISH_FADE_DIST) / (RUBBISH_MAX_DIST - RUBBISH_FADE_DIST);
 				alpha = (RubbishVisibility * alpha) / 256;
 
-				float vx = sin(sheet->m_angle) * 0.4f;
-				float vy = cos(sheet->m_angle) * 0.4f;
+				float vx1, vx2;
+				float vy1, vy2;
 
-				int32_t v = TempBufferVerticesStored;
-				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 0], pos.x + vx, pos.y + vy, pos.z);
+
+				if (i == 0 || i == 1 || i == 3) {
+					vx1 = 0.9f * sin(sheet->m_angle);
+					vy1 = 0.9f * cos(sheet->m_angle);
+					vx2 = 0.3f * cos(sheet->m_angle);
+					vy2 = -0.3f * sin(sheet->m_angle);
+				}
+				else {
+					vx1 = 0.3f * sin(sheet->m_angle);
+					vy1 = 0.3f * cos(sheet->m_angle);
+					vx2 = 0.3f * cos(sheet->m_angle);
+					vy2 = -0.3f * sin(sheet->m_angle);
+				}
+				if (i == 5) {
+					float widthScale = 0.95f; 
+					float heightScale = 0.95; 
+
+					vx1 = sin(sheet->m_angle) * widthScale;
+					vy1 = cos(sheet->m_angle) * heightScale;
+					vx2 = cos(sheet->m_angle) * widthScale;
+					vy2 = -sin(sheet->m_angle) * heightScale;
+				}
+				if (i == 4) {
+					float widthScale = 0.45f;  
+					float heightScale = 0.45; 
+
+					vx1 = sin(sheet->m_angle) * widthScale;
+					vy1 = cos(sheet->m_angle) * heightScale;
+					vx2 = cos(sheet->m_angle) * widthScale;
+					vy2 = -sin(sheet->m_angle) * heightScale;
+				}
+				if (i == 10) {
+					float widthScale = 0.45f;     
+					float heightScale = 0.45; 
+
+					vx1 = sin(sheet->m_angle) * widthScale;
+					vy1 = cos(sheet->m_angle) * heightScale;
+					vx2 = cos(sheet->m_angle) * widthScale;
+					vy2 = -sin(sheet->m_angle) * heightScale;
+				}
+				if (i == 12 || i == 13) {
+					float widthScale = 0.42f; 
+					float heightScale = 0.42; 
+
+					vx1 = sin(sheet->m_angle) * widthScale;
+					vy1 = cos(sheet->m_angle) * heightScale;
+					vx2 = cos(sheet->m_angle) * widthScale;
+					vy2 = -sin(sheet->m_angle) * heightScale;
+				}
+
+				int v = TempBufferVerticesStored;
+				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 0], pos.x + vx1 + vx2, pos.y + vy1 + vy2, pos.z);
+				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 1], pos.x + vx1 - vx2, pos.y + vy1 - vy2, pos.z);
+				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 2], pos.x - vx1 + vx2, pos.y - vy1 + vy2, pos.z);
+				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 3], pos.x - vx1 - vx2, pos.y - vy1 - vy2, pos.z);
 				RwIm3DVertexSetRGBA(&TempBufferRenderVertices[v + 0], 255, 255, 255, alpha);
-				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 1], pos.x - vy, pos.y + vx, pos.z);
 				RwIm3DVertexSetRGBA(&TempBufferRenderVertices[v + 1], 255, 255, 255, alpha);
-				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 2], pos.x + vy, pos.y - vx, pos.z);
 				RwIm3DVertexSetRGBA(&TempBufferRenderVertices[v + 2], 255, 255, 255, alpha);
-				RwIm3DVertexSetPos(&TempBufferRenderVertices[v + 3], pos.x - vx, pos.y - vy, pos.z);
 				RwIm3DVertexSetRGBA(&TempBufferRenderVertices[v + 3], 255, 255, 255, alpha);
 				RwIm3DVertexSetU(&TempBufferRenderVertices[v + 0], 0.0f);
 				RwIm3DVertexSetV(&TempBufferRenderVertices[v + 0], 0.0f);
@@ -186,13 +280,13 @@ void CRubbish::Render() {
 				RwIm3DVertexSetU(&TempBufferRenderVertices[v + 3], 1.0f);
 				RwIm3DVertexSetV(&TempBufferRenderVertices[v + 3], 1.0f);
 
-				int32_t i = TempBufferIndicesStored;
-				TempBufferRenderIndexList[i + 0] = RubbishIndexList[0] + TempBufferVerticesStored;
-				TempBufferRenderIndexList[i + 1] = RubbishIndexList[1] + TempBufferVerticesStored;
-				TempBufferRenderIndexList[i + 2] = RubbishIndexList[2] + TempBufferVerticesStored;
-				TempBufferRenderIndexList[i + 3] = RubbishIndexList[3] + TempBufferVerticesStored;
-				TempBufferRenderIndexList[i + 4] = RubbishIndexList[4] + TempBufferVerticesStored;
-				TempBufferRenderIndexList[i + 5] = RubbishIndexList[5] + TempBufferVerticesStored;
+				int32_t v2 = TempBufferIndicesStored;
+				TempBufferRenderIndexList[v2 + 0] = RubbishIndexList[0] + TempBufferVerticesStored;
+				TempBufferRenderIndexList[v2 + 1] = RubbishIndexList[1] + TempBufferVerticesStored;
+				TempBufferRenderIndexList[v2 + 2] = RubbishIndexList[2] + TempBufferVerticesStored;
+				TempBufferRenderIndexList[v2 + 3] = RubbishIndexList[3] + TempBufferVerticesStored;
+				TempBufferRenderIndexList[v2 + 4] = RubbishIndexList[4] + TempBufferVerticesStored;
+				TempBufferRenderIndexList[v2 + 5] = RubbishIndexList[5] + TempBufferVerticesStored;
 				TempBufferVerticesStored += 4;
 				TempBufferIndicesStored += 6;
 			}
