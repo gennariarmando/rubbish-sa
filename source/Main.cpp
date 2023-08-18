@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 class RubbishSA {
 public:
     RubbishSA() {
-        plugin::Events::initGameEvent += []() {
+        plugin::Events::initRwEvent += []() {
             CRubbish::Init();
         };
 
