@@ -7,13 +7,13 @@ DebugMenuAPI gDebugMenuAPI;
 namespace fs = std::filesystem;
 
 
+
 class RubbishSA {
 public:
     RubbishSA() {
         plugin::Events::initRwEvent += []() {
             CRubbish::Init();
         };
-
         plugin::Events::gameProcessEvent += []() {
             CRubbish::Update();
         };
