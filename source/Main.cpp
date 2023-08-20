@@ -1,13 +1,14 @@
 #include "plugin.h"
 
 #include "Rubbish.h"
+plugin::ThiscallEvent<AddressList<0x53EAD3, H_CALL>, PRIORITY_BEFORE, ArgPickNone, void()> movingThingsEvent;
 
 using namespace plugin;
 
 class RubbishSA {
 public:
     RubbishSA() {
-        plugin::Events::initGameEvent += []() {
+        plugin::Events::initRwEvent += []() {
             CRubbish::Init();
         };
 
@@ -15,8 +16,7 @@ public:
             CRubbish::Update();
         };
 
-        plugin::CdeclEvent <plugin::AddressList<0x53EAD3, plugin::H_CALL>, plugin::PRIORITY_AFTER, plugin::ArgPickNone, void()> onRenderEffects;
-        onRenderEffects += []() {
+        movingThingsEvent += []() {
             CRubbish::Render();
         };
 
